@@ -27,15 +27,23 @@ ALERT_TOPIC  = "power/monitor/alerts"
 CLIENT_ID    = "smart-power-monitor-device-01"
 PUBLISH_INTERVAL = 5  # seconds between readings
 
+EQUIPMENT_PROFILES = {
+    "general_load": {"nominal_voltage": 230.0, "nominal_current": 10.0},
+    "facility_hvac": {"nominal_voltage": 230.0, "nominal_current": 12.0},
+    "industrial_pump": {"nominal_voltage": 230.0, "nominal_current": 14.0},
+    "lighting_panel": {"nominal_voltage": 230.0, "nominal_current": 4.0},
+}
+
 
 # ── Sensor Simulation ────────────────────────────────────────────────────────
 
 class PowerSensorSimulator:
     """Simulates a 3-phase power monitoring sensor."""
 
-    def __init__(self, nominal_voltage=230.0, nominal_current=10.0):
+    def __init__(self, nominal_voltage=230.0, nominal_current=10.0, equipment_profile="general_load"):
         self.nominal_voltage = nominal_voltage
         self.nominal_current = nominal_current
+        self.equipment_profile = equipment_profile
         self.t = 0
 
     def _add_noise(self, value, noise_pct=0.02):
@@ -72,6 +80,7 @@ class PowerSensorSimulator:
 
         return {
             "device_id":       CLIENT_ID,
+            "equipment_profile": self.equipment_profile,
             "timestamp":       datetime.now(timezone.utc).isoformat(),
             "voltage_v":       round(voltage, 3),
             "current_a":       round(current, 3),
@@ -126,9 +135,14 @@ def write_output_line(output_file, reading):
         output_file.flush()
 
 
-def run_local(interval, count=0, output_path=None):
+def run_local(interval, count=0, output_path=None, profile="general_load"):
     """Run without AWS — prints readings to console."""
-    sensor = PowerSensorSimulator()
+    cfg = EQUIPMENT_PROFILES[profile]
+    sensor = PowerSensorSimulator(
+        nominal_voltage=cfg["nominal_voltage"],
+        nominal_current=cfg["nominal_current"],
+        equipment_profile=profile,
+    )
     generated = 0
     output_file = open(output_path, "a", encoding="utf-8") if output_path else None
 
@@ -154,9 +168,14 @@ def run_local(interval, count=0, output_path=None):
             print(f"[LOCAL] Completed {generated}/{count} readings.")
 
 
-def run_aws(endpoint, cert, key, ca, interval, count=0, output_path=None):
+def run_aws(endpoint, cert, key, ca, interval, count=0, output_path=None, profile="general_load"):
     """Publish to AWS IoT Core via MQTT."""
-    sensor    = PowerSensorSimulator()
+    cfg = EQUIPMENT_PROFILES[profile]
+    sensor = PowerSensorSimulator(
+        nominal_voltage=cfg["nominal_voltage"],
+        nominal_current=cfg["nominal_current"],
+        equipment_profile=profile,
+    )
     publisher = IoTPublisher(endpoint, cert, key, ca, CLIENT_ID)
     generated = 0
     output_file = open(output_path, "a", encoding="utf-8") if output_path else None
@@ -196,17 +215,23 @@ def main():
     parser.add_argument("--count",     type=int, default=0,
                         help="Number of readings to publish before exiting (0 = infinite)")
     parser.add_argument("--output",    help="Optional JSONL output file path")
+    parser.add_argument(
+        "--profile",
+        choices=sorted(EQUIPMENT_PROFILES.keys()),
+        default="general_load",
+        help="Equipment profile for industrial/facility simulation",
+    )
     parser.add_argument("--local",     action="store_true", help="Run in local mode (no AWS)")
     args = parser.parse_args()
 
     if args.local or not AWS_IOT_AVAILABLE:
-        run_local(args.interval, args.count, args.output)
+        run_local(args.interval, args.count, args.output, args.profile)
     else:
         if not all([args.endpoint, args.cert, args.key, args.ca]):
             print("ERROR: Provide --endpoint, --cert, --key, --ca for AWS mode.")
             print("       Or run with --local for offline testing.")
             return
-        run_aws(args.endpoint, args.cert, args.key, args.ca, args.interval, args.count, args.output)
+        run_aws(args.endpoint, args.cert, args.key, args.ca, args.interval, args.count, args.output, args.profile)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,12 @@ A serverless backend processes each reading in real-time: detecting faults, pers
 
 **Why this project?** It directly connects power electronics expertise (SiC systems, power converters, circuit analysis) with cloud-native architecture — a strong portfolio piece for cloud IoT and edge computing roles.
 
+### Target deployment scenarios
+
+- Industrial rotating equipment (pumps, motors, compressors)
+- Facility equipment (HVAC units, lighting panels, building feeders)
+- Critical utility and maintenance monitoring points in plants/buildings
+
 ---
 
 ## Architecture
@@ -85,6 +91,7 @@ Each MQTT message contains:
 ```json
 {
   "device_id":          "smart-power-monitor-device-01",
+  "equipment_profile":  "facility_hvac",
   "timestamp":          "2026-03-21T10:30:00.123456+00:00",
   "voltage_v":          231.45,
   "current_a":          9.87,
@@ -222,6 +229,14 @@ python simulator.py \
 
 ```bash
 python simulator.py --local
+```
+
+**Industrial/facility profile simulation examples:**
+
+```bash
+python simulator.py --local --profile facility_hvac
+python simulator.py --local --profile industrial_pump
+python simulator.py --local --profile lighting_panel
 ```
 
 **Generate a finite sample output file (JSONL):**
