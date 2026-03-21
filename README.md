@@ -178,6 +178,12 @@ Generate a complete local report in one command (sample JSONL + chart + summary)
 bash bootstrap.sh --skip-provision --auto-report --report-count 30 --report-prefix demo
 ```
 
+Generate a facility-focused report pack:
+
+```bash
+bash bootstrap.sh --skip-provision --auto-report --report-profile facility_hvac --report-count 300 --report-prefix facility
+```
+
 Generate a larger dataset and multiple comparison outputs:
 
 ```bash
@@ -190,7 +196,7 @@ This generates:
 - Time-series PNG (rolling average + threshold bands)
 - Distribution PNG
 - Comparison PNG (normal vs anomaly, first-half vs second-half, fault-type counts)
-- Summary JSON + comparison JSON
+- Summary JSON + comparison JSON (including equipment profile counts)
 
 ### 5. Provision all AWS resources (one command)
 

@@ -1,0 +1,46 @@
+{
+  "reading_count": 300,
+  "anomaly_count": 16,
+  "normal_count": 284,
+  "anomaly_rate_pct": 5.33,
+  "primary_equipment_profile": "facility_hvac",
+  "voltage_v": {
+    "avg": 229.165,
+    "min": 163.011,
+    "max": 289.941
+  },
+  "current_a": {
+    "avg": 12.074,
+    "min": 11.763,
+    "max": 17.304
+  },
+  "active_power_w": {
+    "avg": 2545.389,
+    "min": 1798.28,
+    "max": 3710.82
+  },
+  "temperature_c": {
+    "avg": 51.07,
+    "min": 49.88,
+    "max": 53.92
+  },
+  "power_factor": {
+    "avg": 0.9199,
+    "min": 0.8926,
+    "max": 0.9475
+  },
+  "frequency_hz": {
+    "avg": 49.999,
+    "min": 49.756,
+    "max": 50.249
+  },
+  "fault_type_counts": {
+    "none": 284,
+    "overvoltage": 3,
+    "undervoltage": 8,
+    "overcurrent": 5
+  },
+  "equipment_profile_counts": {
+    "facility_hvac": 300
+  }
+}

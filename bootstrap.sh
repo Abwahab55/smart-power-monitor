@@ -13,6 +13,7 @@ AUTO_REPORT=0
 REPORT_COUNT=20
 REPORT_INTERVAL=1
 REPORT_PREFIX="sample"
+REPORT_PROFILE="general_load"
 
 usage() {
   cat <<'EOF'
@@ -28,6 +29,7 @@ Options:
   --report-count <n>        Number of sample readings for auto-report (default: 20)
   --report-interval <sec>   Interval seconds for report generation (default: 1)
   --report-prefix <name>    Prefix for generated report files (default: sample)
+  --report-profile <name>   Equipment profile (general_load|facility_hvac|industrial_pump|lighting_panel)
   -h, --help                Show this help text
 
 Examples:
@@ -35,6 +37,7 @@ Examples:
   ./bootstrap.sh --region eu-central-1 --email you@example.com --prefix demo-pm
   ./bootstrap.sh --skip-provision
   ./bootstrap.sh --skip-provision --auto-report --report-count 30 --report-prefix demo
+  ./bootstrap.sh --skip-provision --auto-report --report-profile facility_hvac
 EOF
 }
 
@@ -72,6 +75,10 @@ while [[ $# -gt 0 ]]; do
       REPORT_PREFIX="$2"
       shift 2
       ;;
+    --report-profile)
+      REPORT_PROFILE="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -107,7 +114,7 @@ REPORT_COMPARISON_JSON="$ROOT_DIR/output/${REPORT_ARTIFACT_PREFIX}_comparison.js
 generate_report() {
   echo "[REPORT] Generating sample telemetry and multi-chart analytics report"
   mkdir -p "$ROOT_DIR/output"
-  python "$ROOT_DIR/simulator.py" --local --interval "$REPORT_INTERVAL" --count "$REPORT_COUNT" --output "$REPORT_JSONL" >/dev/null
+  python "$ROOT_DIR/simulator.py" --local --profile "$REPORT_PROFILE" --interval "$REPORT_INTERVAL" --count "$REPORT_COUNT" --output "$REPORT_JSONL" >/dev/null
   python "$ROOT_DIR/visualize_readings.py" \
     --input "$REPORT_JSONL" \
     --output-dir "$ROOT_DIR/output" \
@@ -115,6 +122,7 @@ generate_report() {
     --chart "$REPORT_PNG" \
     --summary "$REPORT_SUMMARY" >/dev/null
   echo "[REPORT] JSONL   : $REPORT_JSONL"
+  echo "[REPORT] Profile : $REPORT_PROFILE"
   echo "[REPORT] Chart   : $REPORT_PNG"
   echo "[REPORT] Summary : $REPORT_SUMMARY"
   echo "[REPORT] Time Series Chart : $REPORT_TIMESERIES_PNG"

@@ -1,30 +1,45 @@
 {
-  "reading_count": 5,
-  "anomaly_count": 0,
-  "anomaly_rate_pct": 0.0,
+  "reading_count": 25,
+  "anomaly_count": 1,
+  "normal_count": 24,
+  "anomaly_rate_pct": 4.0,
+  "primary_equipment_profile": "general_load",
   "voltage_v": {
-    "avg": 228.331,
-    "min": 227.021,
-    "max": 229.973
+    "avg": 226.982,
+    "min": 181.927,
+    "max": 234.248
   },
   "current_a": {
-    "avg": 10.006,
+    "avg": 10.054,
     "min": 9.8,
-    "max": 10.195
+    "max": 10.198
   },
   "active_power_w": {
-    "avg": 2078.928,
-    "min": 2043.61,
-    "max": 2182.82
+    "avg": 2109.581,
+    "min": 1691.77,
+    "max": 2243.72
   },
   "temperature_c": {
-    "avg": 50.046,
-    "min": 49.4,
-    "max": 50.68
+    "avg": 49.906,
+    "min": 49.23,
+    "max": 50.81
   },
   "power_factor": {
-    "avg": 0.9098,
+    "avg": 0.9244,
     "min": 0.8972,
-    "max": 0.9365
+    "max": 0.9474
+  },
+  "frequency_hz": {
+    "avg": 50.031,
+    "min": 49.775,
+    "max": 50.245
+  },
+  "fault_type_counts": {
+    "none": 24,
+    "undervoltage": 1
+  },
+  "equipment_profile_counts": {
+    "unknown": 5,
+    "general_load": 20
   }
 }

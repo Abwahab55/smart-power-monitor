@@ -99,6 +99,7 @@ def percent_change(old, new):
 def build_summary(rows):
     normal, anomaly = split_anomaly(rows)
     fault_counts = Counter(r.get("fault_type") or "none" for r in rows)
+    profile_counts = Counter(r.get("equipment_profile") or "unknown" for r in rows)
 
     voltage = series(rows, "voltage_v")
     current = series(rows, "current_a")
@@ -113,6 +114,7 @@ def build_summary(rows):
         "anomaly_count": len(anomaly),
         "normal_count": len(normal),
         "anomaly_rate_pct": round(len(anomaly) * 100.0 / n, 2),
+        "primary_equipment_profile": profile_counts.most_common(1)[0][0] if profile_counts else "unknown",
         "voltage_v": stats(voltage),
         "current_a": stats(current),
         "active_power_w": stats(power),
@@ -120,6 +122,7 @@ def build_summary(rows):
         "power_factor": stats(pf, digits=4),
         "frequency_hz": stats(freq),
         "fault_type_counts": dict(fault_counts),
+        "equipment_profile_counts": dict(profile_counts),
     }
 
 

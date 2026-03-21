@@ -1,0 +1,56 @@
+{
+  "normal_vs_anomaly": {
+    "voltage_v": {
+      "normal_avg": 228.8588,
+      "anomaly_avg": 181.927,
+      "delta": -46.9318
+    },
+    "current_a": {
+      "normal_avg": 10.0547,
+      "anomaly_avg": 10.033,
+      "delta": -0.0217
+    },
+    "active_power_w": {
+      "normal_avg": 2126.9896,
+      "anomaly_avg": 1691.77,
+      "delta": -435.2196
+    },
+    "temperature_c": {
+      "normal_avg": 49.905,
+      "anomaly_avg": 49.92,
+      "delta": 0.015
+    },
+    "power_factor": {
+      "normal_avg": 0.9243,
+      "anomaly_avg": 0.9269,
+      "delta": 0.0026
+    }
+  },
+  "first_half_vs_second_half": {
+    "voltage_v": {
+      "first_half_avg": 229.3027,
+      "second_half_avg": 224.839,
+      "pct_change": -1.95
+    },
+    "current_a": {
+      "first_half_avg": 10.0347,
+      "second_half_avg": 10.0715,
+      "pct_change": 0.37
+    },
+    "active_power_w": {
+      "first_half_avg": 2120.0992,
+      "second_half_avg": 2099.8715,
+      "pct_change": -0.95
+    },
+    "temperature_c": {
+      "first_half_avg": 50.05,
+      "second_half_avg": 49.7723,
+      "pct_change": -0.55
+    },
+    "power_factor": {
+      "first_half_avg": 0.9212,
+      "second_half_avg": 0.9273,
+      "pct_change": 0.66
+    }
+  }
+}
