@@ -260,6 +260,24 @@ python visualize_readings.py \
   --prefix readings
 ```
 
+## Sample Output Visuals
+
+### Dashboard Snapshot
+
+![Readings Dashboard](output/readings_dashboard.png)
+
+### Time-Series Analysis
+
+![Readings Time Series](output/readings_timeseries.png)
+
+### Distribution Analysis
+
+![Readings Distributions](output/readings_distributions.png)
+
+### Comparison Analysis
+
+![Readings Comparison](output/readings_comparison.png)
+
 ---
 
 ## REST API Endpoints
