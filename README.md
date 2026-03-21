@@ -204,6 +204,12 @@ python simulator.py \
 python simulator.py --local
 ```
 
+**Generate a finite sample output file (JSONL):**
+
+```bash
+python simulator.py --local --interval 1 --count 10 --output sample_readings.jsonl
+```
+
 ---
 
 ## REST API Endpoints
