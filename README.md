@@ -210,6 +210,15 @@ python simulator.py --local
 python simulator.py --local --interval 1 --count 10 --output sample_readings.jsonl
 ```
 
+**Generate graphical dashboard + summary from JSONL output:**
+
+```bash
+python visualize_readings.py \
+  --input sample_readings.jsonl \
+  --chart output/readings_dashboard.png \
+  --summary output/readings_summary.json
+```
+
 ---
 
 ## REST API Endpoints
@@ -274,7 +283,6 @@ print(json.dumps(result, indent=2))
 
 ## Cleanup — Remove All AWS Resources
 
-`--teardown` is not implemented in `setup_aws.py` yet, so manual cleanup is required.
 ```bash
 python teardown_aws.py --region eu-central-1 --prefix power-monitor
 ```
