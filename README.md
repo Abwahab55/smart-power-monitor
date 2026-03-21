@@ -165,6 +165,12 @@ Only prepare local prerequisites (skip AWS provisioning):
 bash bootstrap.sh --skip-provision
 ```
 
+Generate a complete local report in one command (sample JSONL + chart + summary):
+
+```bash
+bash bootstrap.sh --skip-provision --auto-report --report-count 30 --report-prefix demo
+```
+
 ### 5. Provision all AWS resources (one command)
 
 ```bash

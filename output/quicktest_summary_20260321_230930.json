@@ -1,0 +1,30 @@
+{
+  "reading_count": 5,
+  "anomaly_count": 0,
+  "anomaly_rate_pct": 0.0,
+  "voltage_v": {
+    "avg": 229.088,
+    "min": 227.087,
+    "max": 230.498
+  },
+  "current_a": {
+    "avg": 9.993,
+    "min": 9.807,
+    "max": 10.137
+  },
+  "active_power_w": {
+    "avg": 2076.738,
+    "min": 2034.6,
+    "max": 2140.37
+  },
+  "temperature_c": {
+    "avg": 50.192,
+    "min": 49.62,
+    "max": 50.68
+  },
+  "power_factor": {
+    "avg": 0.9072,
+    "min": 0.8956,
+    "max": 0.927
+  }
+}
