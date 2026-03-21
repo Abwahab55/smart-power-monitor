@@ -1,0 +1,42 @@
+{
+  "reading_count": 1000,
+  "anomaly_count": 36,
+  "normal_count": 964,
+  "anomaly_rate_pct": 3.6,
+  "voltage_v": {
+    "avg": 230.125,
+    "min": 169.997,
+    "max": 295.63
+  },
+  "current_a": {
+    "avg": 10.025,
+    "min": 9.8,
+    "max": 14.393
+  },
+  "active_power_w": {
+    "avg": 2123.914,
+    "min": 1519.89,
+    "max": 3108.8
+  },
+  "temperature_c": {
+    "avg": 50.003,
+    "min": 48.91,
+    "max": 52.64
+  },
+  "power_factor": {
+    "avg": 0.9206,
+    "min": 0.8924,
+    "max": 0.9476
+  },
+  "frequency_hz": {
+    "avg": 49.992,
+    "min": 49.75,
+    "max": 50.248
+  },
+  "fault_type_counts": {
+    "none": 964,
+    "overvoltage": 14,
+    "overcurrent": 8,
+    "undervoltage": 14
+  }
+}

@@ -171,6 +171,20 @@ Generate a complete local report in one command (sample JSONL + chart + summary)
 bash bootstrap.sh --skip-provision --auto-report --report-count 30 --report-prefix demo
 ```
 
+Generate a larger dataset and multiple comparison outputs:
+
+```bash
+bash bootstrap.sh --skip-provision --auto-report --report-count 1000 --report-interval 0 --report-prefix large
+```
+
+This generates:
+- Raw JSONL readings
+- Main dashboard PNG
+- Time-series PNG (rolling average + threshold bands)
+- Distribution PNG
+- Comparison PNG (normal vs anomaly, first-half vs second-half, fault-type counts)
+- Summary JSON + comparison JSON
+
 ### 5. Provision all AWS resources (one command)
 
 ```bash
@@ -221,8 +235,8 @@ python simulator.py --local --interval 1 --count 10 --output sample_readings.jso
 ```bash
 python visualize_readings.py \
   --input sample_readings.jsonl \
-  --chart output/readings_dashboard.png \
-  --summary output/readings_summary.json
+  --output-dir output \
+  --prefix readings
 ```
 
 ---

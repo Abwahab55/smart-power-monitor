@@ -95,18 +95,32 @@ if ! [[ "$REPORT_INTERVAL" =~ ^[0-9]+$ ]]; then
 fi
 
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
+REPORT_ARTIFACT_PREFIX="${REPORT_PREFIX}_${TIMESTAMP}"
 REPORT_JSONL="$ROOT_DIR/output/${REPORT_PREFIX}_readings_${TIMESTAMP}.jsonl"
 REPORT_PNG="$ROOT_DIR/output/${REPORT_PREFIX}_dashboard_${TIMESTAMP}.png"
 REPORT_SUMMARY="$ROOT_DIR/output/${REPORT_PREFIX}_summary_${TIMESTAMP}.json"
+REPORT_TIMESERIES_PNG="$ROOT_DIR/output/${REPORT_ARTIFACT_PREFIX}_timeseries.png"
+REPORT_DISTRIBUTIONS_PNG="$ROOT_DIR/output/${REPORT_ARTIFACT_PREFIX}_distributions.png"
+REPORT_COMPARISON_PNG="$ROOT_DIR/output/${REPORT_ARTIFACT_PREFIX}_comparison.png"
+REPORT_COMPARISON_JSON="$ROOT_DIR/output/${REPORT_ARTIFACT_PREFIX}_comparison.json"
 
 generate_report() {
-  echo "[REPORT] Generating sample telemetry and visual report"
+  echo "[REPORT] Generating sample telemetry and multi-chart analytics report"
   mkdir -p "$ROOT_DIR/output"
   python "$ROOT_DIR/simulator.py" --local --interval "$REPORT_INTERVAL" --count "$REPORT_COUNT" --output "$REPORT_JSONL" >/dev/null
-  python "$ROOT_DIR/visualize_readings.py" --input "$REPORT_JSONL" --chart "$REPORT_PNG" --summary "$REPORT_SUMMARY" >/dev/null
+  python "$ROOT_DIR/visualize_readings.py" \
+    --input "$REPORT_JSONL" \
+    --output-dir "$ROOT_DIR/output" \
+    --prefix "$REPORT_ARTIFACT_PREFIX" \
+    --chart "$REPORT_PNG" \
+    --summary "$REPORT_SUMMARY" >/dev/null
   echo "[REPORT] JSONL   : $REPORT_JSONL"
   echo "[REPORT] Chart   : $REPORT_PNG"
   echo "[REPORT] Summary : $REPORT_SUMMARY"
+  echo "[REPORT] Time Series Chart : $REPORT_TIMESERIES_PNG"
+  echo "[REPORT] Distribution Chart: $REPORT_DISTRIBUTIONS_PNG"
+  echo "[REPORT] Comparison Chart  : $REPORT_COMPARISON_PNG"
+  echo "[REPORT] Comparison JSON   : $REPORT_COMPARISON_JSON"
 }
 
 echo "[1/4] Setting up Python virtual environment"
