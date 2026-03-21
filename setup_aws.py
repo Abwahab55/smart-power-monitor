@@ -12,7 +12,7 @@ Run this ONCE to provision:
   - IoT Core Rule → Lambda trigger
 
 Usage:
-    python infrastructure/setup_aws.py --region eu-central-1 --email your@email.com
+    python setup_aws.py --region eu-central-1 --email your@email.com
 """
 
 import boto3
@@ -22,6 +22,7 @@ import argparse
 import zipfile
 import os
 import sys
+from botocore.exceptions import NoCredentialsError, ClientError
 
 
 def banner(msg):
@@ -44,11 +45,23 @@ def setup_dynamodb(client, table_name, region):
                 {"AttributeName": "timestamp",  "AttributeType": "S"},
             ],
             BillingMode="PAY_PER_REQUEST",
-            TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
         )
         print(f"  [OK] Table '{table_name}' created.")
     except client.exceptions.ResourceInUseException:
         print(f"  [SKIP] Table '{table_name}' already exists.")
+
+    # TTL is configured after table creation.
+    client.get_waiter("table_exists").wait(TableName=table_name)
+    try:
+        client.update_time_to_live(
+            TableName=table_name,
+            TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
+        )
+        print("  [OK] TTL enabled on attribute 'ttl'.")
+    except client.exceptions.ValidationException:
+        # Safe to continue if TTL is already enabled.
+        print("  [SKIP] TTL already configured.")
+
     return f"arn:aws:dynamodb:{region}:*:table/{table_name}"
 
 
@@ -203,6 +216,20 @@ def setup_iot_thing(iot_client, thing_name, policy_name, lambda_arn, region, acc
     print(f"  [OK] IoT Endpoint: {endpoint}")
 
     try:
+        # Allow AWS IoT Core to invoke the Lambda function from this account/region.
+        lambda_client = boto3.client("lambda", region_name=region)
+        lambda_client.add_permission(
+            FunctionName=lambda_arn,
+            StatementId="AllowIoTRuleInvoke",
+            Action="lambda:InvokeFunction",
+            Principal="iot.amazonaws.com",
+            SourceArn=f"arn:aws:iot:{region}:{account_id}:rule/PowerMonitorToLambda",
+        )
+        print("  [OK] Lambda invoke permission granted to IoT rule.")
+    except lambda_client.exceptions.ResourceConflictException:
+        print("  [SKIP] Lambda invoke permission already exists.")
+
+    try:
         iot_client.create_topic_rule(
             ruleName="PowerMonitorToLambda",
             topicRulePayload={
@@ -231,7 +258,19 @@ def main():
     region      = args.region
     prefix      = args.prefix
     session     = boto3.Session(region_name=region)
-    account_id  = session.client("sts").get_caller_identity()["Account"]
+    try:
+        account_id = session.client("sts").get_caller_identity()["Account"]
+    except NoCredentialsError:
+        print("ERROR: AWS credentials not found.")
+        print("Set credentials before running setup_aws.py:")
+        print("  1) export AWS_ACCESS_KEY_ID=...")
+        print("  2) export AWS_SECRET_ACCESS_KEY=...")
+        print("  3) export AWS_DEFAULT_REGION=eu-central-1")
+        print("Or configure a profile and run with AWS_PROFILE.")
+        sys.exit(1)
+    except ClientError as e:
+        print(f"ERROR: Failed to call STS GetCallerIdentity: {e}")
+        sys.exit(1)
 
     names = {
         "table":       f"{prefix}-readings",
@@ -263,12 +302,12 @@ def main():
 
     lambda_iot_arn = setup_lambda(
         session.client("lambda"), names["lambda_iot"],
-        "lambda/handler.py", "handler.handler",
+        "handler.py", "handler.handler",
         role_arn, env_iot, "IoT data processor for Smart Power Monitor",
     )
     lambda_api_arn = setup_lambda(
         session.client("lambda"), names["lambda_api"],
-        "lambda/api_handler.py", "api_handler.handler",
+        "api_handler.py", "api_handler.handler",
         role_arn, env_api, "REST API for Smart Power Monitor dashboard",
     )
 
@@ -297,7 +336,7 @@ def main():
     print(f"  Config saved : config.json")
     print()
     print("Next step — run the device simulator:")
-    print(f"  python device/simulator.py \\")
+    print(f"  python simulator.py \\")
     print(f"    --endpoint {endpoint} \\")
     print(f"    --cert certs/device-cert.pem \\")
     print(f"    --key  certs/private-key.pem \\")
