@@ -151,6 +151,20 @@ curl -o certs/AmazonRootCA1.pem \
   https://www.amazontrust.com/repository/AmazonRootCA1.pem
 ```
 
+### Optional: one-command bootstrap
+
+Run all local prerequisites (venv, dependencies, cert) and AWS provisioning:
+
+```bash
+bash bootstrap.sh --region eu-central-1 --email your@email.com
+```
+
+Only prepare local prerequisites (skip AWS provisioning):
+
+```bash
+bash bootstrap.sh --skip-provision
+```
+
 ### 5. Provision all AWS resources (one command)
 
 ```bash
