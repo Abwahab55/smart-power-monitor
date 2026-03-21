@@ -6,7 +6,6 @@
 ![AWS IoT](https://img.shields.io/badge/AWS-IoT%20Core-orange?style=flat-square&logo=amazonaws)
 ![Lambda](https://img.shields.io/badge/AWS-Lambda-orange?style=flat-square&logo=awslambda)
 ![DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-blue?style=flat-square&logo=amazondynamodb)
-![License](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)
 
 ---
@@ -296,16 +295,13 @@ This project was designed to leverage semiconductor and power systems expertise:
 ## Author
 
 **Abdul Wahab**
-AE @ Lumissil Microsystems | SiC power systems → Cloud computing | 5 IEEE publications
+AE @ Lumissil Microsystems | SiC power systems → Cloud computing 
 
 - GitHub: [@Abwahab55](https://github.com/Abwahab55)
 - Email: wahab.engr55@yahoo.com
 
 ---
 
-## License
-
-This project is licensed under the MIT License.
 
 ---
 
