@@ -269,6 +269,11 @@ print(json.dumps(result, indent=2))
 ## Cleanup — Remove All AWS Resources
 
 `--teardown` is not implemented in `setup_aws.py` yet, so manual cleanup is required.
+```bash
+python teardown_aws.py --region eu-central-1 --prefix power-monitor
+```
+
+You can change `--prefix` if you provisioned with a different prefix.
 
 Or manually via AWS Console: delete Lambda → DynamoDB → S3 → SNS → IoT Thing/Policy/Cert → IAM role.
 
