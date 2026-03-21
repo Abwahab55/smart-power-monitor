@@ -120,39 +120,70 @@ class IoTPublisher:
 
 # ── Main Loop ────────────────────────────────────────────────────────────────
 
-def run_local(interval):
+def write_output_line(output_file, reading):
+    if output_file:
+        output_file.write(json.dumps(reading) + "\n")
+        output_file.flush()
+
+
+def run_local(interval, count=0, output_path=None):
     """Run without AWS — prints readings to console."""
     sensor = PowerSensorSimulator()
+    generated = 0
+    output_file = open(output_path, "a", encoding="utf-8") if output_path else None
+
     print(f"[LOCAL] Publishing every {interval}s. Press Ctrl+C to stop.\n")
+    if output_path:
+        print(f"[LOCAL] Writing JSONL output to: {output_path}\n")
+
     try:
-        while True:
+        while count <= 0 or generated < count:
             reading = sensor.read()
+            write_output_line(output_file, reading)
             print(json.dumps(reading, indent=2))
             if reading["anomaly"]:
                 print(f"  *** ALERT: {reading['fault_type'].upper()} detected! ***")
+            generated += 1
             time.sleep(interval)
     except KeyboardInterrupt:
         print("\n[LOCAL] Stopped.")
+    finally:
+        if output_file:
+            output_file.close()
+        if count > 0:
+            print(f"[LOCAL] Completed {generated}/{count} readings.")
 
 
-def run_aws(endpoint, cert, key, ca, interval):
+def run_aws(endpoint, cert, key, ca, interval, count=0, output_path=None):
     """Publish to AWS IoT Core via MQTT."""
     sensor    = PowerSensorSimulator()
     publisher = IoTPublisher(endpoint, cert, key, ca, CLIENT_ID)
+    generated = 0
+    output_file = open(output_path, "a", encoding="utf-8") if output_path else None
     publisher.connect()
 
     print(f"[IoT] Publishing to '{TOPIC}' every {interval}s. Ctrl+C to stop.\n")
+    if output_path:
+        print(f"[IoT] Writing JSONL output to: {output_path}\n")
+
     try:
-        while True:
+        while count <= 0 or generated < count:
             reading = sensor.read()
             publisher.publish(TOPIC, reading)
+            write_output_line(output_file, reading)
             print(f"[{reading['timestamp']}] V={reading['voltage_v']}V "
                   f"I={reading['current_a']}A P={reading['active_power_w']}W "
                   f"{'*** FAULT: ' + str(reading['fault_type']) + ' ***' if reading['anomaly'] else ''}")
+            generated += 1
             time.sleep(interval)
     except KeyboardInterrupt:
         print("\n[IoT] Stopping...")
+    finally:
+        if output_file:
+            output_file.close()
         publisher.disconnect()
+        if count > 0:
+            print(f"[IoT] Completed {generated}/{count} readings.")
 
 
 def main():
@@ -162,17 +193,20 @@ def main():
     parser.add_argument("--key",       help="Path to private key (.pem)")
     parser.add_argument("--ca",        help="Path to root CA certificate")
     parser.add_argument("--interval",  type=int, default=PUBLISH_INTERVAL)
+    parser.add_argument("--count",     type=int, default=0,
+                        help="Number of readings to publish before exiting (0 = infinite)")
+    parser.add_argument("--output",    help="Optional JSONL output file path")
     parser.add_argument("--local",     action="store_true", help="Run in local mode (no AWS)")
     args = parser.parse_args()
 
     if args.local or not AWS_IOT_AVAILABLE:
-        run_local(args.interval)
+        run_local(args.interval, args.count, args.output)
     else:
         if not all([args.endpoint, args.cert, args.key, args.ca]):
             print("ERROR: Provide --endpoint, --cert, --key, --ca for AWS mode.")
             print("       Or run with --local for offline testing.")
             return
-        run_aws(args.endpoint, args.cert, args.key, args.ca, args.interval)
+        run_aws(args.endpoint, args.cert, args.key, args.ca, args.interval, args.count, args.output)
 
 
 if __name__ == "__main__":
