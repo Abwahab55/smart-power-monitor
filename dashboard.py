@@ -72,9 +72,19 @@ HTML = """
       color: var(--text);
     }
     .wrap { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
-    .head { margin-bottom: 16px; }
+    .head { margin-bottom: 16px; display: flex; align-items: end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .head h1 { margin: 0; font-size: 1.6rem; }
     .head p { margin: 6px 0 0; color: var(--sub); }
+    .controls { display: flex; align-items: center; gap: 8px; color: var(--sub); font-size: 0.92rem; }
+    .controls select, .controls button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 8px;
+      background: #fff;
+      color: var(--text);
+    }
+    .controls button { cursor: pointer; }
+    .status { font-weight: 600; color: var(--accent); }
     .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
     .card {
       background: var(--panel);
@@ -98,8 +108,21 @@ HTML = """
 <body>
 <div class="wrap">
   <div class="head">
-    <h1>Smart Power Monitor - Live Dashboard</h1>
-    <p id="source"></p>
+    <div>
+      <h1>Smart Power Monitor - Live Dashboard</h1>
+      <p id="source"></p>
+    </div>
+    <div class="controls">
+      <span>Refresh</span>
+      <select id="refreshEvery">
+        <option value="0">Off</option>
+        <option value="3">3s</option>
+        <option value="5" selected>5s</option>
+        <option value="10">10s</option>
+      </select>
+      <button id="refreshNow">Refresh now</button>
+      <span class="status" id="status">Loading...</span>
+    </div>
   </div>
   <div class="grid" id="kpis"></div>
   <div class="charts">
@@ -109,10 +132,33 @@ HTML = """
   </div>
 </div>
 <script>
+let lineChart = null;
+let anomalyChart = null;
+let halfChart = null;
+let refreshTimer = null;
+
+function pointRadii(length, anomalyPoints) {
+  const out = new Array(length).fill(0);
+  for (const p of anomalyPoints || []) {
+    const idx = p - 1;
+    if (idx >= 0 && idx < out.length) out[idx] = 3;
+  }
+  return out;
+}
+
 async function load() {
+  const status = document.getElementById('status');
+  status.innerText = 'Refreshing...';
+
   const [summaryRes, seriesRes, compRes] = await Promise.all([
     fetch('/api/summary'), fetch('/api/series'), fetch('/api/comparison')
   ]);
+
+  if (!summaryRes.ok || !seriesRes.ok || !compRes.ok) {
+    status.innerText = 'API error';
+    return;
+  }
+
   const summary = await summaryRes.json();
   const series = await seriesRes.json();
   const comp = await compRes.json();
@@ -134,22 +180,25 @@ async function load() {
   ).join('');
 
   const labels = series.reading_index;
-  new Chart(document.getElementById('lineChart').getContext('2d'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Voltage (V)', data: series.voltage_v, borderColor: '#2563eb', pointRadius: 0 },
-        { label: 'Current (A)', data: series.current_a, borderColor: '#ea580c', pointRadius: 0 },
-        { label: 'Power (W)', data: series.active_power_w, borderColor: '#16a34a', pointRadius: 0 },
-        { label: 'Temp (C)', data: series.temperature_c, borderColor: '#dc2626', pointRadius: 0 },
-      ]
-    },
-    options: { responsive: true, maintainAspectRatio: false }
-  });
+  const anomalyRadii = pointRadii(labels.length, series.anomaly_points);
+  if (lineChart) lineChart.destroy();
+  lineChart = new Chart(document.getElementById('lineChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Voltage (V)', data: series.voltage_v, borderColor: '#2563eb', pointRadius: anomalyRadii, pointBackgroundColor: '#c2410c' },
+          { label: 'Current (A)', data: series.current_a, borderColor: '#ea580c', pointRadius: anomalyRadii, pointBackgroundColor: '#c2410c' },
+          { label: 'Power (W)', data: series.active_power_w, borderColor: '#16a34a', pointRadius: anomalyRadii, pointBackgroundColor: '#c2410c' },
+          { label: 'Temp (C)', data: series.temperature_c, borderColor: '#dc2626', pointRadius: anomalyRadii, pointBackgroundColor: '#c2410c' },
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
 
   const an = comp.normal_vs_anomaly;
-  new Chart(document.getElementById('anomalyChart').getContext('2d'), {
+  if (anomalyChart) anomalyChart.destroy();
+  anomalyChart = new Chart(document.getElementById('anomalyChart').getContext('2d'), {
     type: 'bar',
     data: {
       labels: ['Voltage', 'Current', 'Power', 'Temp'],
@@ -162,7 +211,8 @@ async function load() {
   });
 
   const half = comp.first_half_vs_second_half;
-  new Chart(document.getElementById('halfChart').getContext('2d'), {
+  if (halfChart) halfChart.destroy();
+  halfChart = new Chart(document.getElementById('halfChart').getContext('2d'), {
     type: 'bar',
     data: {
       labels: ['Voltage', 'Current', 'Power', 'Temp'],
@@ -173,8 +223,23 @@ async function load() {
     },
     options: { responsive: true, maintainAspectRatio: false }
   });
+
+  const now = new Date();
+  status.innerText = `Updated ${now.toLocaleTimeString()}`;
 }
+
+function scheduleRefresh() {
+  const seconds = Number(document.getElementById('refreshEvery').value);
+  if (refreshTimer) clearInterval(refreshTimer);
+  if (seconds > 0) {
+    refreshTimer = setInterval(load, seconds * 1000);
+  }
+}
+
+document.getElementById('refreshEvery').addEventListener('change', scheduleRefresh);
+document.getElementById('refreshNow').addEventListener('click', load);
 load();
+scheduleRefresh();
 </script>
 </body>
 </html>
@@ -183,7 +248,10 @@ load();
 
 def create_app(input_path):
     app = Flask(__name__)
-    payload = load_payload(input_path)
+
+    def get_payload():
+        # Reload file each request so dashboard can reflect appended telemetry.
+        return load_payload(input_path)
 
     @app.get("/")
     def index():
@@ -191,12 +259,14 @@ def create_app(input_path):
 
     @app.get("/api/summary")
     def api_summary():
+        payload = get_payload()
         data = dict(payload["summary"])
         data["source"] = payload["source"]
         return jsonify(data)
 
     @app.get("/api/series")
     def api_series():
+        payload = get_payload()
         data = dict(payload["series"])
         data["reading_index"] = list(range(1, len(payload["rows"]) + 1))
         data["anomaly_points"] = payload["anomaly_points"]
@@ -204,6 +274,7 @@ def create_app(input_path):
 
     @app.get("/api/comparison")
     def api_comparison():
+        payload = get_payload()
         return jsonify(payload["comparison"])
 
     return app
