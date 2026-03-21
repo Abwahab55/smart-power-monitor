@@ -271,6 +271,43 @@ After deployment, query your data via API Gateway:
 
 ---
 
+## Live Dashboard (Local)
+
+Run an interactive local dashboard from generated JSONL data:
+
+```bash
+python dashboard.py --input output/large_readings_20260321_231644.jsonl --port 8050
+```
+
+If `--input` is omitted, the dashboard loads the newest `output/*_readings_*.jsonl` file automatically.
+
+Dashboard API routes:
+- `/api/summary`
+- `/api/series`
+- `/api/comparison`
+
+---
+
+## Testing
+
+Run the test suite locally:
+
+```bash
+pytest -q
+```
+
+---
+
+## CI Pipeline
+
+GitHub Actions workflow is included at `.github/workflows/ci.yml`.
+It runs on pushes and pull requests to `main` and executes:
+- dependency install
+- syntax checks (`py_compile`)
+- test suite (`pytest`)
+
+---
+
 ## Testing Lambda Locally
 
 Test the IoT processor Lambda without deploying:
