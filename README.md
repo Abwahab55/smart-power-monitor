@@ -6,6 +6,7 @@
 ![AWS IoT](https://img.shields.io/badge/AWS-IoT%20Core-orange?style=flat-square&logo=amazonaws)
 ![Lambda](https://img.shields.io/badge/AWS-Lambda-orange?style=flat-square&logo=awslambda)
 ![DynamoDB](https://img.shields.io/badge/AWS-DynamoDB-blue?style=flat-square&logo=amazondynamodb)
+![License](https://img.shields.io/badge/License-MIT-lightgrey?style=flat-square)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)
 
 ---
@@ -449,3 +450,8 @@ AE @ Lumissil Microsystems | SiC power systems → Cloud computing
 
 Abdul Wahab thanks the AWS open-source and IoT documentation teams whose examples provided the foundation for the MQTT and Lambda integration patterns used in this project.
 
+---
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+Copyright (c) 2026 Abdul Wahab
