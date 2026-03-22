@@ -1,21 +1,25 @@
-"""Smart Power Monitor - Live Dashboard (local).
+"""Smart Power Monitor - Live Dashboard + Free Real-Time API.
 
-Launch:
-  python dashboard.py --input output/large_readings_20260321_231644.jsonl
-or simply:
-  python dashboard.py
+Modes:
+  1) Live mode (default): generates in-memory telemetry and serves API/dashboard.
+  2) File mode: load telemetry from an existing JSONL file.
 
-If --input is omitted, the app loads the newest JSONL file from output/.
+Launch examples:
+  python dashboard.py --live --profile facility_hvac --interval 1
+  python dashboard.py --input output/facility_large_readings_20260321_234925.jsonl
 """
 
 import argparse
 import glob
-import json
 import os
+import threading
+import time
+from collections import deque
 from pathlib import Path
 
 from flask import Flask, jsonify, render_template_string
 
+from simulator import EQUIPMENT_PROFILES, PowerSensorSimulator
 from visualize_readings import build_comparison, build_summary, read_jsonl, series
 
 
@@ -44,6 +48,52 @@ def load_payload(path):
         },
         "anomaly_points": [i + 1 for i, r in enumerate(rows) if r.get("anomaly")],
     }
+
+
+def payload_from_rows(rows, source):
+    return {
+        "source": source,
+        "rows": rows,
+        "summary": build_summary(rows),
+        "comparison": build_comparison(rows),
+        "series": {
+            "voltage_v": series(rows, "voltage_v"),
+            "current_a": series(rows, "current_a"),
+            "active_power_w": series(rows, "active_power_w"),
+            "temperature_c": series(rows, "temperature_c"),
+        },
+        "anomaly_points": [i + 1 for i, r in enumerate(rows) if r.get("anomaly")],
+    }
+
+
+class LiveTelemetryStore:
+    def __init__(self, profile="general_load", interval=1.0, buffer_size=5000):
+        cfg = EQUIPMENT_PROFILES[profile]
+        self.sensor = PowerSensorSimulator(
+            nominal_voltage=cfg["nominal_voltage"],
+            nominal_current=cfg["nominal_current"],
+            equipment_profile=profile,
+        )
+        self.profile = profile
+        self.interval = interval
+        self.rows = deque(maxlen=buffer_size)
+        self._lock = threading.Lock()
+        self._stop_event = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+
+    def start(self):
+        self._thread.start()
+
+    def _run(self):
+        while not self._stop_event.is_set():
+            reading = self.sensor.read()
+            with self._lock:
+                self.rows.append(reading)
+            time.sleep(self.interval)
+
+    def snapshot(self):
+        with self._lock:
+            return list(self.rows)
 
 
 HTML = """
@@ -246,11 +296,23 @@ scheduleRefresh();
 """
 
 
-def create_app(input_path):
+def create_app(input_path=None, live=False, profile="general_load", interval=1.0, buffer_size=5000):
     app = Flask(__name__)
 
+    live_store = None
+    if live:
+        live_store = LiveTelemetryStore(profile=profile, interval=interval, buffer_size=buffer_size)
+        live_store.start()
+
     def get_payload():
-        # Reload file each request so dashboard can reflect appended telemetry.
+        if live_store is not None:
+            rows = live_store.snapshot()
+            if not rows:
+                # Ensure API has at least one reading shortly after startup.
+                rows = [live_store.sensor.read()]
+            return payload_from_rows(rows, f"live://{profile}")
+
+        # File mode: reload each request so appended telemetry is visible.
         return load_payload(input_path)
 
     @app.get("/")
@@ -264,6 +326,17 @@ def create_app(input_path):
         data["source"] = payload["source"]
         return jsonify(data)
 
+    @app.get("/api/health")
+    def api_health():
+        payload = get_payload()
+        mode = "live" if live_store is not None else "file"
+        return jsonify({
+            "status": "ok",
+            "mode": mode,
+            "source": payload["source"],
+            "reading_count": len(payload["rows"]),
+        })
+
     @app.get("/api/series")
     def api_series():
         payload = get_payload()
@@ -271,6 +344,12 @@ def create_app(input_path):
         data["reading_index"] = list(range(1, len(payload["rows"]) + 1))
         data["anomaly_points"] = payload["anomaly_points"]
         return jsonify(data)
+
+    @app.get("/api/readings/latest")
+    def api_reading_latest():
+        payload = get_payload()
+        latest = payload["rows"][-1] if payload["rows"] else None
+        return jsonify({"source": payload["source"], "latest": latest})
 
     @app.get("/api/comparison")
     def api_comparison():
@@ -283,18 +362,43 @@ def create_app(input_path):
 def main():
     parser = argparse.ArgumentParser(description="Run Smart Power Monitor dashboard")
     parser.add_argument("--input", help="Telemetry JSONL path. Defaults to latest output/*_readings_*.jsonl")
+    parser.add_argument("--live", action="store_true", help="Use free live API mode (no AWS required)")
+    parser.add_argument(
+        "--profile",
+        choices=sorted(EQUIPMENT_PROFILES.keys()),
+        default="general_load",
+        help="Equipment profile for live mode",
+    )
+    parser.add_argument("--interval", type=float, default=1.0, help="Sampling interval in seconds for live mode")
+    parser.add_argument("--buffer-size", type=int, default=5000, help="Max retained readings in memory for live mode")
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8050)
     args = parser.parse_args()
 
-    input_path = args.input or pick_latest_jsonl("output")
-    if not input_path:
-        raise FileNotFoundError("No input JSONL found. Generate data first (bootstrap --auto-report).")
+    live_mode = args.live
+    input_path = args.input
 
-    app = create_app(input_path)
-    print(f"[DASHBOARD] Source: {input_path}")
+    if not live_mode and not input_path:
+        # Default to live mode so users always get a free active API even without files.
+        live_mode = True
+
+    if not live_mode and input_path is None:
+        input_path = pick_latest_jsonl("output")
+
+    if not live_mode and not input_path:
+        raise FileNotFoundError("No input JSONL found. Use --live or generate data first.")
+
+    app = create_app(
+        input_path=input_path,
+        live=live_mode,
+        profile=args.profile,
+        interval=max(args.interval, 0.0),
+        buffer_size=max(args.buffer_size, 100),
+    )
+    source = f"live://{args.profile}" if live_mode else input_path
+    print(f"[DASHBOARD] Source: {source}")
     print(f"[DASHBOARD] URL: http://{args.host}:{args.port}")
-    app.run(host=args.host, port=args.port)
+    app.run(host=args.host, port=args.port, use_reloader=False)
 
 
 if __name__ == "__main__":

@@ -320,10 +320,29 @@ python dashboard.py --input output/large_readings_20260321_231644.jsonl --port 8
 
 If `--input` is omitted, the dashboard loads the newest `output/*_readings_*.jsonl` file automatically.
 
+### Free Active API mode (real-time, no AWS required)
+
+Run dashboard with built-in free live API:
+
+```bash
+python dashboard.py --live --profile facility_hvac --interval 1 --port 8050
+```
+
+This starts real-time in-memory telemetry generation and serves API endpoints your app can consume.
+
 Dashboard API routes:
 - `/api/summary`
 - `/api/series`
 - `/api/comparison`
+- `/api/readings/latest`
+- `/api/health`
+
+Quick API test:
+
+```bash
+curl http://localhost:8050/api/health
+curl http://localhost:8050/api/readings/latest
+```
 
 ---
 
